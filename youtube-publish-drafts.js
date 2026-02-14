@@ -73,6 +73,10 @@
     }
 
     function click(element) {
+        if (element == null) {
+            debugLog('click(): element is null or undefined, skipping');
+            return;
+        }
         const event = document.createEvent('MouseEvents');
         event.initMouseEvent('mousedown', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
         element.dispatchEvent(event);
@@ -113,7 +117,12 @@
         }
 
         async close() {
-            click(await this.closeDialogButton());
+            const btn = await this.closeDialogButton();
+            if (btn === null) {
+                debugLog('close(): could not find close dialog button, skipping');
+                return;
+            }
+            click(btn);
             await sleep(50);
             debugLog('closed');
         }
@@ -130,6 +139,10 @@
 
         async visibilityRadioButton() {
             const group = await this.radioButtonGroup();
+            if (group === null) {
+                debugLog('visibilityRadioButton(): could not find radio button group');
+                return null;
+            }
             const value = VISIBILITY_PUBLISH_ORDER[VISIBILITY];
             return [...group.querySelectorAll(RADIO_BUTTON_SELECTOR)][value];
         }
@@ -205,7 +218,12 @@
 
         async openDraft() {
             debugLog('focusing draft button');
-            click(await this.editDraftButton);
+            const btn = await this.editDraftButton;
+            if (btn === null) {
+                debugLog('openDraft(): could not find edit draft button, skipping');
+                return null;
+            }
+            click(btn);
             return new DraftModal(await waitForElement(DRAFT_MODAL_SELECTOR));
         }
     }
@@ -232,6 +250,10 @@
         await sleep(1000);
         for (let video of videos) {
             const draft = await video.openDraft();
+            if (draft === null) {
+                debugLog('could not open draft, skipping');
+                continue;
+            }
             debugLog({
                 draft
             });
@@ -271,11 +293,21 @@
         }
 
         async moveToTop() {
-            click(this.menuItems()[MOVE_TO_TOP_INDEX]);
+            const items = this.menuItems();
+            if (items.length <= MOVE_TO_TOP_INDEX) {
+                debugLog('moveToTop(): menu item not found at expected index');
+                return;
+            }
+            click(items[MOVE_TO_TOP_INDEX]);
         }
 
         async moveToBottom() {
-            click(this.menuItems()[MOVE_TO_BOTTOM_INDEX]);
+            const items = this.menuItems();
+            if (items.length <= MOVE_TO_BOTTOM_INDEX) {
+                debugLog('moveToBottom(): menu item not found at expected index');
+                return;
+            }
+            click(items[MOVE_TO_BOTTOM_INDEX]);
         }
     }
     class PlaylistVideo {
@@ -283,14 +315,20 @@
             this.raw = raw;
         }
         get name() {
-            return this.raw.querySelector('#video-title').textContent;
+            const titleEl = this.raw.querySelector('#video-title');
+            return titleEl ? titleEl.textContent : '';
         }
         async dialog() {
             return this.raw.querySelector(SORTING_MENU_BUTTON_SELECTOR);
         }
 
         async openDialog() {
-            click(await this.dialog());
+            const dialogEl = await this.dialog();
+            if (dialogEl == null) {
+                debugLog('openDialog(): could not find dialog button, skipping');
+                return null;
+            }
+            click(dialogEl);
             const dialog = new SortingDialog(await waitForElement(SORTING_ITEM_MENU_SELECTOR));
             await dialog.anyMenuItem();
             return dialog;
@@ -313,6 +351,11 @@
             debugLog({index, name});
             const video = videos.find((v) => v.name === name);
             const dialog = await video.openDialog();
+            if (dialog === null) {
+                debugLog(`could not open dialog for video "${name}", skipping`);
+                index += 1;
+                continue;
+            }
             await dialog.moveToBottom();
             await sleep(1000);
             index += 1;
