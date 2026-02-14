@@ -105,7 +105,8 @@
     const SAVE_BUTTON_SELECTOR = '#done-button';
     const SUCCESS_ELEMENT_SELECTOR = 'ytcp-video-thumbnail-with-info';
     const DIALOG_SELECTOR = 'ytcp-dialog.ytcp-video-share-dialog > tp-yt-paper-dialog:nth-child(1)';
-    const DIALOG_CLOSE_BUTTON_SELECTOR = 'tp-yt-iron-icon';
+    const DIALOG_CLOSE_BUTTON_SELECTOR = '#close-button';
+    const DIALOG_CLOSE_BUTTON_SELECTOR_FALLBACK = 'tp-yt-iron-icon';
 
     class SuccessDialog {
         constructor(raw) {
@@ -113,7 +114,12 @@
         }
 
         async closeDialogButton() {
-            return await waitForElement(DIALOG_CLOSE_BUTTON_SELECTOR, this.raw);
+            let btn = await waitForElement(DIALOG_CLOSE_BUTTON_SELECTOR, this.raw);
+            if (btn === null) {
+                debugLog('closeDialogButton(): primary close button not found, trying fallback');
+                btn = await waitForElement(DIALOG_CLOSE_BUTTON_SELECTOR_FALLBACK, this.raw);
+            }
+            return btn;
         }
 
         async close() {
